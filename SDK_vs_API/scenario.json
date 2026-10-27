@@ -1,0 +1,74 @@
+{
+  "scenario_name": "venue-agent-two-session-test",
+  "sessions": [
+    {
+      "session_id": "session-1",
+      "turns": [
+        {
+          "turn": 1,
+          "request": "מצא מקום בתל אביב ל-60 משתתפים.",
+          "expected_checks": [
+            "search_venues_called",
+            "all_results_have_capacity_at_least_60"
+          ]
+        },
+        {
+          "turn": 2,
+          "request": "שמור את תל אביב כעיר ברירת המחדל שלי.",
+          "expected_checks": [
+            "default_city_saved_to_disk"
+          ]
+        },
+        {
+          "turn": 3,
+          "request": "בדוק מידע חיצוני רלוונטי על מזג האוויר בתאריך האירוע.",
+          "expected_checks": [
+            "external_tool_called_or_explicitly_unavailable"
+          ]
+        },
+        {
+          "turn": 4,
+          "request": "סכם את האפשרויות וסיים את הסשן.",
+          "expected_checks": [
+            "session_1_completed"
+          ]
+        }
+      ]
+    },
+    {
+      "session_id": "session-2",
+      "turns": [
+        {
+          "turn": 1,
+          "request": "הצע מקום ל-50 משתתפים בלי לציין עיר.",
+          "expected_checks": [
+            "memory_loaded",
+            "default_city_used"
+          ]
+        },
+        {
+          "turn": 2,
+          "request": "הפעם חפש בירושלים בלבד.",
+          "expected_checks": [
+            "current_city_overrides_default",
+            "persistent_default_city_unchanged"
+          ]
+        },
+        {
+          "turn": 3,
+          "request": "הצג פרטים מלאים של אחד המקומות שנמצאו.",
+          "expected_checks": [
+            "get_venue_details_called"
+          ]
+        },
+        {
+          "turn": 4,
+          "request": "סיים והצג את ההמלצה.",
+          "expected_checks": [
+            "session_2_completed"
+          ]
+        }
+      ]
+    }
+  ]
+}

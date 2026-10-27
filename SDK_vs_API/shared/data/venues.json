@@ -1,0 +1,24 @@
+[
+  {
+    "id": "venue_001",
+    "name": "Venue A",
+    "city": "Tel Aviv",
+    "capacity": 80,
+    "budget_level": "medium",
+    "event_types": ["conference", "workshop"],
+    "indoor": true,
+    "parking": true,
+    "features": ["projector", "wifi"]
+  },
+  {
+    "id": "venue_002",
+    "name": "Venue B",
+    "city": "Ramat Gan",
+    "capacity": 30,
+    "budget_level": "low",
+    "event_types": ["workshop", "meeting"],
+    "indoor": true,
+    "parking": false,
+    "features": ["wifi"]
+  }
+]
