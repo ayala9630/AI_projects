@@ -1,0 +1,25 @@
+# Python bytecode and test/type-checker output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local environments and secrets
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Generated caches and evaluation output
+.cache/
+Car_RAG/results/
+
+# Operating system files
+.DS_Store
+Thumbs.db

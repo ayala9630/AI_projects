@@ -1,10 +1,14 @@
+from netfree_unstrict_ssl import unstrict_ssl
+unstrict_ssl()
 import json
 import os
 
 from dotenv import load_dotenv
 from groq import Groq
+import groq
+
 load_dotenv()  # טוען את .env מתיקיית העבודה
-    
+
 from API.harness.tools import (
     TOOL_SCHEMAS,
     dispatch_tool,
@@ -12,15 +16,44 @@ from API.harness.tools import (
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "" + os.getenv("GROQ_MODEL")
 
 SYSTEM_PROMPT = """
 You are a venue-search assistant.
 
-Use the available tools to search the local venue database.
+**Always** use the available tools to search the local venue database.
 Do not invent venue details.
+include in your answer the tools that you checked if they are relevant to the user query.
 If information is missing, state that it is unknown.
 """
+
+
+def _is_blocked_page(exc: Exception) -> bool:
+    """בודק אם התשובה היא דף חסימה של נטפרי ולא שגיאת API אמיתית."""
+    resp = getattr(exc, "response", None)
+    if resp is None:
+        return False
+    content_type = (resp.headers.get("content-type") or "").lower()
+    body = resp.text or ""
+    return "text/html" in content_type or "netfree.link/block" in body
+
+
+def ask(messages, tools=None, model=MODEL):
+    """עטיפה לכל קריאה למודל, עם זיהוי חסימת רשת."""
+    try:
+        return client.chat.completions.create(
+            model=model,
+            messages=messages,
+            tools=tools or [],
+            tool_choice="auto",
+        )
+    except groq.APIStatusError as e:
+        if _is_blocked_page(e):
+            raise RuntimeError(
+                "הבקשה נחסמה על ידי סינון הרשת (נטפרי). "
+                "יש לפתוח את api.groq.com מול התמיכה."
+            ) from e
+        raise
 
 
 def run_agent(user_text: str, max_steps: int = 6) -> str:
@@ -32,12 +65,8 @@ def run_agent(user_text: str, max_steps: int = 6) -> str:
     for step in range(max_steps):
         print(f"[loop.py] Model call, step={step + 1}")
 
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=messages,
-            tools=TOOL_SCHEMAS,
-            tool_choice="auto",
-        )
+        response = ask(messages, tools=TOOL_SCHEMAS)
+        
 
         message = response.choices[0].message
 

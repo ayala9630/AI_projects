@@ -1,5 +1,6 @@
+from netfree_unstrict_ssl import unstrict_ssl
+unstrict_ssl()
 from API.agent import run_agent
-
 
 def main():
     user_text = input("Describe your event: ")

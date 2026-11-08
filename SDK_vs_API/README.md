@@ -1,85 +1,101 @@
-# Venue Recommendation Agent —&#x20;
+# MeetSpot — API vs SDK
 
-## 1. Project Overview
+MeetSpot is a conversational venue-finding project and a practical comparison of building an AI agent with an API-oriented approach and an SDK-oriented approach. The two implementations work with the same venue-search domain so their design and operational trade-offs can be studied side by side.
 
-The project implements an agent that recommends venues using structured venue data extracted from a PDF.
+The project includes a Hebrew, right-to-left chat application, local venue data, agent tools, an example comparison scenario, and offline tests. The goal is to compare implementation choices—not to assume either approach is faster, cheaper, or better without measurements.
 
-The agent supports\:API vs SDK
+## What it does
 
-- Searching venues by city, capacity, and required features.
-- Retrieving details for a selected venue.
-- Persisting preferences between sessions.
-- Building a context containing only relevant information.
-- Recording model usage and execution time.
-- Running offline tests with a mocked API client.
+- Searches the local venue catalog by city, minimum capacity, and required features.
+- Retrieves details for a selected venue.
+- Provides a weather lookup tool for current conditions in a city.
+- Includes code for preparing agent context, working with saved preferences, and recording model usage and execution time.
+- Preserves venue source-page metadata in the structured dataset.
 
-## 2. Implementation
+## The API and SDK comparison
 
-### API Version
+The project separates its implementation areas into `API/` and `SDK/`, while sharing the venue data and domain tools. This makes it possible to compare the work involved in areas such as:
 
-The API implementation manages the agent loop, tool dispatch, conversation history, persistent memory, context construction, and usage measurement directly in Python.
+- Setting up the model interaction and agent loop.
+- Defining and dispatching tools.
+- Building and managing conversation context.
+- Tracking token usage, tool calls, and runtime.
+- Testing behavior against the same requests and scenario.
 
-### SDK Version
+Use the same model, prompts, data, and scenario when collecting measurements. Record actual results in [`REPORT.md`](REPORT.md); mark unavailable metrics as unavailable rather than estimating them. The project does not declare a winner in advance.
 
-The SDK implementation must use the SDK required by the assignment. A client library for an API is not equivalent to a full agent SDK.
+## Run the chat application
 
-Describe which responsibilities the SDK handles automatically and which remain implemented in application code.
+From the repository root, enter the project directory:
 
-## 3. Measurements
+```powershell
+cd SDK_vs_API
+```
 
-| Metric                |                     API |                     SDK |
-| --------------------- | ----------------------: | ----------------------: |
-| Input tokens          |        [measured value] | [measured value or N/A] |
-| Output tokens         |        [measured value] | [measured value or N/A] |
-| Cache read tokens     | [measured value or N/A] | [measured value or N/A] |
-| Cache write tokens    | [measured value or N/A] | [measured value or N/A] |
-| Model calls           |        [measured value] |        [measured value] |
-| Total cost (USD)      | [measured value or N/A] | [measured value or N/A] |
-| Runtime (ms)          |        [measured value] |        [measured value] |
-| Tests passed          |         [actual result] |         [actual result] |
-| Harness lines of code |          [actual count] |          [actual count] |
+Create and activate a virtual environment, then install the project and application dependencies:
 
-All measurements should come from actual executions. Missing provider metrics must be marked N/A rather than estimated.
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt streamlit netfree-unstrict-ssl
+```
 
-Record the model identifier, execution date, pricing source, and token rates used for cost calculations.
+Create a `.env` file in `SDK_vs_API/` and provide your model-provider credentials and model configuration:
 
-## 4. Harness Comparison
+```dotenv
+GROQ_API_KEY=your_api_key
+GROQ_MODEL=your_model_id
+```
 
-### Responsibilities saved by the SDK
+Keep `.env` private; do not commit API keys. Start the chat interface with:
 
-Describe which responsibilities are handled by the SDK, based on its actual documentation and observed behavior.
+```powershell
+streamlit run app.py
+```
 
-### Token usage
+`app.py` is the Streamlit entry point. It displays the MeetSpot chat, keeps the conversation in the Streamlit session, and presents the assistant's venue recommendations.
 
-Compare input and output token counts using the same scenario. Explain differences using measured results rather than assumptions.
+## Run an implementation from the command line
 
-### Direct control in the API version
+Run either entry point from the `SDK_vs_API/` directory:
 
-The API implementation provides direct control over tool dispatch, message construction, context selection, stopping conditions, and application-level metrics.
+```powershell
+python -m API.main
+```
 
-### Measurement and control in the SDK version
+```powershell
+python -m SDK.main
+```
 
-Describe which internal operations can be measured directly and which metrics are unavailable or require additional instrumentation.
+Both prompt for event details and print the agent's response. The model configuration and any provider credentials must be available in the environment.
 
-## 5. Testing
+## Tests and comparison scenario
 
-Report the actual results of the offline test suite for each implementation.
+Run the offline test suite from `SDK_vs_API/`:
 
-Include tests for:
+```powershell
+pytest -q
+```
 
-- Tool execution and tool errors.
-- Persistent memory save and load.
-- Session-to-session preference persistence.
-- Current-request overrides.
-- Agent loop termination.
-- Token and cost calculations.
-- Venue capacity filtering.
-- Preservation of source-page metadata.
+The tests cover preference persistence and request-specific overrides, venue filtering and source-page metadata, unknown-tool handling, cost calculations, and agent-loop termination using a mocked model client.
 
-## 6. Conclusion
+[`scenario.json`](scenario.json) describes a two-session venue-search scenario. It includes expected checks for capacity filtering, saved city preferences, current-request overrides, weather lookup, venue details, and session completion.
 
-Choose the implementation that best fits the project requirements.
+## Project layout
 
-Base the decision on measured token usage, runtime, implementation complexity, test coverage, and the amount of control required over the agent loop.
-
-Do not claim that one implementation is more efficient unless the measurements support that conclusion.
+```text
+SDK_vs_API/
+├── app.py                 # Streamlit chat application
+├── API/                   # API-oriented agent and orchestration harness
+├── SDK/                   # SDK-oriented agent entry point and tool exports
+├── shared/                # Venue data, schemas, parsing, and shared tools
+│   └── data/
+│       ├── venues.json    # Structured venue catalog
+│       ├── venues.pdf     # Source venue document
+│       └── memory.json    # Saved preference data
+├── results/               # Result files for the comparison
+├── tests/                 # Offline automated tests
+├── scenario.json          # Example two-session comparison scenario
+├── REPORT.md              # Comparison report and measurement template
+└── requirements.txt       # Python dependencies
+```
