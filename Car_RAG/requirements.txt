@@ -6,3 +6,4 @@ sentence-transformers
 # optional, only with EMBED_BACKEND=voyage:
 # voyageai
 groq
+streamlit

@@ -14,7 +14,7 @@ from pathlib import Path
 from rag.chunking import chunk_by_headings, chunk_fixed
 from rag.embed import Embedder
 from rag.loader import load_docs
-from rag.search import Index, search
+from rag.search import Index, expanded_search
 
 CHUNKERS = {"fixed": chunk_fixed, "headings": chunk_by_headings}
 
@@ -61,7 +61,7 @@ def main():
     index = build_index(args.chunker)
     by_type, rows = defaultdict(lambda: [0, 0, 0.0]), []  # type -> [hits, questions, sum of reciprocal ranks]
     for q in golden:
-        found = search(index, q["question"], args.mode, args.k, args.current_only)
+        found = expanded_search(index, q["question"], args.mode, args.k, args.current_only)
         if not needles(q):  # questions with no answer in the data are checked in eval_answers.py
             print(f"  {q['id']:>2}  —        [{q['type']}] {q['question']}")
             continue

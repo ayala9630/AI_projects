@@ -1,6 +1,7 @@
 """Answers a question from the retrieved chunks, as a Pydantic object with citations."""
 from urllib import response
 
+from rag.model_client import chat_completion
 from pydantic import BaseModel, Field, ConfigDict
 
 from rag.chunking import Chunk
@@ -48,7 +49,7 @@ def ask(question: str, chunks: list[Chunk], client=None) -> tuple[Answer, object
         from groq import Groq
 
         client = Groq(api_key=os.environ["GROQ_API_KEY"])
-        response = client.chat.completions.create(
+        response = chat_completion(
             model=MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM},

@@ -3,11 +3,8 @@ from netfree_unstrict_ssl import unstrict_ssl
 unstrict_ssl()
 import re
 import json
-import os
-from groq import Groq
-
+from rag.model_client import chat_completion
 import numpy as np
-from rag.answer import MODEL
 from rank_bm25 import BM25Okapi
 
 from rag.chunking import Chunk
@@ -75,10 +72,7 @@ def expand_query(question: str) -> list[str]:
     A comparison question returns one query per entity.
     """
 
-    client = Groq(api_key=os.environ["GROQ_API_KEY"])
-
-    response = client.chat.completions.create(
-        model=MODEL,
+    response = chat_completion(
         messages=[
             {
                 "role": "system",
