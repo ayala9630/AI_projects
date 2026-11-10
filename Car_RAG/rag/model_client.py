@@ -4,7 +4,8 @@ from groq import Groq, RateLimitError
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 MODELS = [
-    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
 ]
 
 

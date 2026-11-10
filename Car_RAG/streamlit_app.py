@@ -986,6 +986,7 @@ if answers:
                 st.success("השאלה עברה את הבדיקה.")
 
 
+
 # ==================================================
 # היסטוריית הרצות והשוואת תוצאות
 # ==================================================
@@ -995,11 +996,9 @@ st.divider()
 st.header("היסטוריית הרצות Golden")
 
 try:
-
     history = load_history()
 
 except Exception as e:
-
     save_error("טעינת היסטוריית הרצות", e)
     history = []
 
@@ -1014,6 +1013,10 @@ else:
         key=lambda x: x["run_id"],
         reverse=True
     )
+
+    # ----------------------------------------------
+    # הצגת כל ההרצות
+    # ----------------------------------------------
 
     history_rows = []
 
@@ -1041,6 +1044,10 @@ else:
 
     st.subheader("כל ההרצות")
     show_table(history_rows)
+
+    # ----------------------------------------------
+    # בחירת סוג בדיקה
+    # ----------------------------------------------
 
     st.subheader("השוואה בין שתי הרצות")
 
@@ -1080,23 +1087,31 @@ else:
                 f"Top K={run['config']['top_k']}"
             )
 
-        col1, col2 = st.columns(2)
+        # ------------------------------------------
+        # בחירת הרצות: ראשונה מימין, שנייה משמאל
+        # ------------------------------------------
 
-        first_index = col1.selectbox(
-            "הרצה ראשונה",
-            options=options,
-            format_func=run_label,
-            index=1,
-            key="comparison_first"
-        )
+        left_col, right_col = st.columns(2)
 
-        second_index = col2.selectbox(
-            "הרצה שנייה",
-            options=options,
-            format_func=run_label,
-            index=0,
-            key="comparison_second"
-        )
+        with right_col:
+
+            first_index = st.selectbox(
+                "הרצה ראשונה",
+                options=options,
+                format_func=run_label,
+                index=min(1, len(options) - 1),
+                key="comparison_first"
+            )
+
+        with left_col:
+
+            second_index = st.selectbox(
+                "הרצה שנייה",
+                options=options,
+                format_func=run_label,
+                index=0,
+                key="comparison_second"
+            )
 
         first_run = matching_runs[first_index]
         second_run = matching_runs[second_index]
@@ -1110,95 +1125,147 @@ else:
             m1 = first_run["metrics"]
             m2 = second_run["metrics"]
 
+            # --------------------------------------
+            # פונקציית הצגת מדד והשינוי
+            # --------------------------------------
+
+            def show_comparison_metric(
+                title,
+                value1,
+                value2,
+                higher_is_better=True,
+                formatter=None
+            ):
+                if formatter is None:
+                    formatter = str
+
+                difference = value2 - value1
+
+                # הפרש מספרי להצגה
+                delta_text = formatter(abs(difference))
+
+                if difference < 0:
+                    delta_text = f"-{delta_text}"
+                elif difference > 0:
+                    delta_text = f"+{delta_text}"
+
+                # צבעים: ירוק לשיפור ואדום להרעה
+                delta_color = (
+                    "normal" if higher_is_better else "inverse"
+                )
+
+                st.markdown(f"#### {title}")
+
+                left_metric, right_metric = st.columns(2)
+
+                # צד ימין – הרצה ראשונה והשינוי
+                with right_metric:
+                    st.metric(
+                        label="הרצה ראשונה",
+                        value=formatter(value1),
+                        delta=delta_text,
+                        delta_color=delta_color,
+                    )
+
+                # צד שמאל – הרצה שנייה
+                with left_metric:
+                    st.metric(
+                        label="הרצה שנייה",
+                        value=formatter(value2)
+                    )
+
+                st.divider()
+
+
+            # --------------------------------------
+            # מדדים כלליים
+            # --------------------------------------
+
             st.markdown("### השוואת מדדים")
 
-            c1, c2, c3 = st.columns(3)
-
-            c1.metric(
-                "שאלות שעברו – הרצה ראשונה",
-                f"{m1['passed']}/{m1['total']}"
+            show_comparison_metric(
+                title="שאלות שעברו",
+                value1=m1["passed"],
+                value2=m2["passed"],
+                higher_is_better=True,
+                formatter=lambda x: str(x)
             )
 
-            c2.metric(
-                "שאלות שעברו – הרצה שנייה",
-                f"{m2['passed']}/{m2['total']}",
-                delta=m2["passed"] - m1["passed"]
-            )
+            # --------------------------------------
+            # מדדי Retrieval
+            # --------------------------------------
 
             if run_kind == "retrieval":
 
-                st.markdown("#### מדדי Retrieval")
+                st.markdown("### מדדי Retrieval")
 
-                metric_cols = st.columns(2)
-
-                metric_cols[0].metric(
-                    "Recall@K – הרצה ראשונה",
-                    f"{m1['recall']:.2%}"
+                show_comparison_metric(
+                    title="Recall@K",
+                    value1=m1["recall"],
+                    value2=m2["recall"],
+                    higher_is_better=True,
+                    formatter=lambda x: f"{x:.2%}"
                 )
 
-                metric_cols[1].metric(
-                    "Recall@K – הרצה שנייה",
-                    f"{m2['recall']:.2%}",
-                    delta=f"{(m2['recall'] - m1['recall']):.2%}"
+                show_comparison_metric(
+                    title="MRR",
+                    value1=m1["mrr"],
+                    value2=m2["mrr"],
+                    higher_is_better=True,
+                    formatter=lambda x: f"{x:.3f}"
                 )
 
-                metric_cols = st.columns(2)
-
-                metric_cols[0].metric(
-                    "MRR – הרצה ראשונה",
-                    f"{m1['mrr']:.3f}"
-                )
-
-                metric_cols[1].metric(
-                    "MRR – הרצה שנייה",
-                    f"{m2['mrr']:.3f}",
-                    delta=round(m2["mrr"] - m1["mrr"], 3)
-                )
+            # --------------------------------------
+            # מדדי Answers
+            # --------------------------------------
 
             else:
 
-                st.markdown("#### Pass Rate")
+                st.markdown("### מדדי Answers")
 
-                metric_cols = st.columns(2)
-
-                metric_cols[0].metric(
-                    "הרצה ראשונה",
-                    f"{m1['pass_rate']:.2%}"
+                show_comparison_metric(
+                    title="Pass Rate",
+                    value1=m1["pass_rate"],
+                    value2=m2["pass_rate"],
+                    higher_is_better=True,
+                    formatter=lambda x: f"{x:.2%}"
                 )
 
-                metric_cols[1].metric(
-                    "הרצה שנייה",
-                    f"{m2['pass_rate']:.2%}",
-                    delta=f"{(m2['pass_rate'] - m1['pass_rate']):.2%}"
+                st.markdown("### צריכת טוקנים")
+
+                show_comparison_metric(
+                    title="Input Tokens",
+                    value1=m1["tokens_in"],
+                    value2=m2["tokens_in"],
+                    higher_is_better=False,
+                    formatter=lambda x: f"{x:,}"
                 )
 
-                st.markdown("#### צריכת טוקנים")
+                show_comparison_metric(
+                    title="Output Tokens",
+                    value1=m1["tokens_out"],
+                    value2=m2["tokens_out"],
+                    higher_is_better=False,
+                    formatter=lambda x: f"{x:,}"
+                )
 
-                token_rows = [
-                    {
-                        "סוג טוקנים": "Input",
-                        "הרצה ראשונה": m1["tokens_in"],
-                        "הרצה שנייה": m2["tokens_in"],
-                        "הפרש": m2["tokens_in"] - m1["tokens_in"]
-                    },
-                    {
-                        "סוג טוקנים": "Output",
-                        "הרצה ראשונה": m1["tokens_out"],
-                        "הרצה שנייה": m2["tokens_out"],
-                        "הפרש": m2["tokens_out"] - m1["tokens_out"]
-                    }
-                ]
-
-                show_table(token_rows)
+            # --------------------------------------
+            # השוואת הגדרות
+            # --------------------------------------
 
             st.markdown("### השוואת הגדרות")
 
             config_rows = []
 
-            for key in first_run["config"]:
+            all_config_keys = sorted(
+                set(first_run["config"]) |
+                set(second_run["config"])
+            )
 
-                value1 = first_run["config"][key]
-                value2 = second_run["config"][key]
+            for key in all_config_keys:
+
+                value1 = first_run["config"].get(key)
+                value2 = second_run["config"].get(key)
 
                 config_rows.append({
                     "הגדרה": key,
@@ -1210,6 +1277,10 @@ else:
                 })
 
             show_table(config_rows)
+
+            # --------------------------------------
+            # השוואת תוצאות לפי שאלה
+            # --------------------------------------
 
             st.markdown("### השוואת תוצאות לפי שאלה")
 
@@ -1262,6 +1333,10 @@ else:
 
             show_table(comparison_rows)
 
+            # --------------------------------------
+            # פרטי ההרצות
+            # --------------------------------------
+
             st.markdown("### פרטי ההרצות")
 
             with st.expander("הצגת הגדרות ההרצה הראשונה"):
@@ -1269,6 +1344,10 @@ else:
 
             with st.expander("הצגת הגדרות ההרצה השנייה"):
                 st.json(second_run["config"])
+
+    # ----------------------------------------------
+    # הורדת היסטוריה
+    # ----------------------------------------------
 
     st.divider()
 
