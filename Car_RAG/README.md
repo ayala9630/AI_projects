@@ -117,4 +117,3 @@ The following screenshots were provided and are saved in `screenshots/`:
 
 ![Golden evaluation progress](screenshots/golden-evaluation-progress.png)
 
-For a more complete visual overview, add a screenshot of the **Golden Retrieval final results** and, optionally, the main question-and-answer screen with a verified citation. Keep text and metrics legible, and make sure no API keys or other private information are visible.
